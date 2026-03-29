@@ -1,64 +1,157 @@
---open/close button
---i made it by myself but turned into lua code by the plugin
+-- open/close button (melhorado)
+local TweenService     = game:GetService("TweenService")
+local UserInputService = game:GetService("UserInputService")
+local VIM              = game:GetService("VirtualInputManager")
+
+-- ── SCREENGUI ──────────────────────────────────────
 local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Parent          = game.Players.LocalPlayer:WaitForChild("PlayerGui")
+ScreenGui.ZIndexBehavior  = Enum.ZIndexBehavior.Sibling
+ScreenGui.ResetOnSpawn    = false
+
+-- ── SOMBRA ─────────────────────────────────────────
+local Shadow = Instance.new("ImageLabel")
+Shadow.Parent             = ScreenGui
+Shadow.Size               = UDim2.new(0, 165, 0, 68)
+Shadow.Position           = UDim2.new(0.783, -12, 0.143, 6)
+Shadow.BackgroundTransparency = 1
+Shadow.Image              = "rbxassetid://6014261993"
+Shadow.ImageColor3        = Color3.fromRGB(0, 0, 0)
+Shadow.ImageTransparency  = 0.5
+Shadow.ScaleType          = Enum.ScaleType.Slice
+Shadow.SliceCenter        = Rect.new(49, 49, 450, 450)
+Shadow.ZIndex             = 1
+
+-- ── FRAME PRINCIPAL ────────────────────────────────
+local Frame = Instance.new("Frame")
+Frame.Parent             = ScreenGui
+Frame.Size               = UDim2.new(0, 140, 0, 46)
+Frame.Position           = UDim2.new(0.783, 0, 0.143, 0)
+Frame.BackgroundColor3   = Color3.fromRGB(12, 12, 24)
+Frame.BorderSizePixel    = 0
+Frame.ZIndex             = 2
+
+Instance.new("UICorner", Frame).CornerRadius = UDim.new(0, 12)
+
+local Gradient = Instance.new("UIGradient")
+Gradient.Color = ColorSequence.new({
+	ColorSequenceKeypoint.new(0, Color3.fromRGB(110, 55, 220)),
+	ColorSequenceKeypoint.new(1, Color3.fromRGB(35, 120, 230)),
+})
+Gradient.Rotation = 50
+Gradient.Parent   = Frame
+
+local Stroke = Instance.new("UIStroke")
+Stroke.Color     = Color3.fromRGB(130, 90, 255)
+Stroke.Thickness = 1.6
+Stroke.Parent    = Frame
+
+-- ── BOTÃO ──────────────────────────────────────────
 local TextButton = Instance.new("TextButton")
-local UICorner = Instance.new("UICorner")
+TextButton.Parent             = Frame
+TextButton.Size               = UDim2.new(1, 0, 1, 0)
+TextButton.BackgroundTransparency = 1
+TextButton.BorderSizePixel    = 0
+TextButton.Font               = Enum.Font.GothamBold
+TextButton.Text               = "⚡  Abrir Hub"
+TextButton.TextColor3         = Color3.fromRGB(255, 255, 255)
+TextButton.TextSize           = 14
+TextButton.ZIndex             = 3
 
+local TxtStroke = Instance.new("UIStroke")
+TxtStroke.Color        = Color3.fromRGB(0, 0, 0)
+TxtStroke.Thickness    = 1
+TxtStroke.Transparency = 0.6
+TxtStroke.Parent       = TextButton
 
-ScreenGui.Parent = game.Players.LocalPlayer:WaitForChild("PlayerGui")
-ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+-- ── DRAG ───────────────────────────────────────────
+local dragToggle, dragStart, startPos = nil, nil, nil
+local dragSpeed = 0.1
 
-TextButton.Parent = ScreenGui
-TextButton.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-TextButton.BackgroundTransparency = 0.500
-TextButton.BorderColor3 = Color3.fromRGB(0, 0, 0)
-TextButton.BorderSizePixel = 0
-TextButton.Position = UDim2.new(0.783684671, 0, 0.143968865, 0)
-TextButton.Size = UDim2.new(0, 115, 0, 50)
-TextButton.Font = Enum.Font.SourceSans
-TextButton.Text = "open/close gui"
-TextButton.TextColor3 = Color3.fromRGB(0, 0, 0)
-TextButton.TextSize = 14.000
-TextButton.MouseButton1Down:Connect(function()
-	game:GetService("VirtualInputManager"):SendKeyEvent(true, "F6" , false , game)
+local function updateInput(input)
+	local delta = input.Position - dragStart
+	local newPos = UDim2.new(
+		startPos.X.Scale, startPos.X.Offset + delta.X,
+		startPos.Y.Scale, startPos.Y.Offset + delta.Y
+	)
+	TweenService:Create(Frame, TweenInfo.new(dragSpeed), {Position = newPos}):Play()
+	-- sync sombra
+	Shadow.Position = UDim2.new(
+		Frame.Position.X.Scale, Frame.Position.X.Offset - 12,
+		Frame.Position.Y.Scale, Frame.Position.Y.Offset + 6
+	)
+end
+
+Frame.InputBegan:Connect(function(input)
+	if input.UserInputType == Enum.UserInputType.MouseButton1
+	or input.UserInputType == Enum.UserInputType.Touch then
+		dragToggle = true
+		dragStart  = input.Position
+		startPos   = Frame.Position
+		input.Changed:Connect(function()
+			if input.UserInputState == Enum.UserInputState.End then
+				dragToggle = false
+			end
+		end)
+	end
 end)
 
-UICorner.Parent = TextButton
-
-
-local function UQTTQG_fake_script() -- TextButton.LocalScript 
-	local script = Instance.new('LocalScript', TextButton)
-
-	local UIS = game:GetService("UserInputService")
-	local frame = script.Parent
-	local dragToggle = nil
-	local dragSpeed = 0.25
-	local dragStart = nil
-	local startPos = nil
-	local function updateInput(input)
-		local delta = input.Position - dragStart
-		local position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X,
-			startPos.Y.Scale, startPos.Y.Offset + delta.Y)
-		game:GetService("TweenService"):Create(frame, TweenInfo.new(dragSpeed), {Position = position}):Play()
+UserInputService.InputChanged:Connect(function(input)
+	if input.UserInputType == Enum.UserInputType.MouseMovement
+	or input.UserInputType == Enum.UserInputType.Touch then
+		if dragToggle then
+			updateInput(input)
+		end
 	end
-	frame.InputBegan:Connect(function(input)
-		if (input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch) then 
-			dragToggle = true
-			dragStart = input.Position
-			startPos = frame.Position
-			input.Changed:Connect(function()
-				if input.UserInputState == Enum.UserInputState.End then
-					dragToggle = false
-				end
-			end)
-		end
-	end)
-	UIS.InputChanged:Connect(function(input)
-		if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
-			if dragToggle then
-				updateInput(input)
-			end
-		end
-	end)
+end)
+
+-- ── VISUAL TOGGLE ──────────────────────────────────
+local SIZE_BASE  = UDim2.new(0, 140, 0, 46)
+local SIZE_HOVER = UDim2.new(0, 146, 0, 50)
+local SIZE_CLICK = UDim2.new(0, 132, 0, 42)
+local hubAberto  = false
+
+local function setVisual(aberto)
+	if aberto then
+		Gradient.Color = ColorSequence.new({
+			ColorSequenceKeypoint.new(0, Color3.fromRGB(210, 35, 85)),
+			ColorSequenceKeypoint.new(1, Color3.fromRGB(140, 15, 55)),
+		})
+		Stroke.Color    = Color3.fromRGB(255, 70, 120)
+		TextButton.Text = "✖  Fechar Hub"
+	else
+		Gradient.Color = ColorSequence.new({
+			ColorSequenceKeypoint.new(0, Color3.fromRGB(110, 55, 220)),
+			ColorSequenceKeypoint.new(1, Color3.fromRGB(35, 120, 230)),
+		})
+		Stroke.Color    = Color3.fromRGB(130, 90, 255)
+		TextButton.Text = "⚡  Abrir Hub"
+	end
 end
-coroutine.wrap(UQTTQG_fake_script)()
+
+TextButton.MouseEnter:Connect(function()
+	TweenService:Create(Frame, TweenInfo.new(0.15, Enum.EasingStyle.Quad), {Size = SIZE_HOVER}):Play()
+end)
+TextButton.MouseLeave:Connect(function()
+	TweenService:Create(Frame, TweenInfo.new(0.15, Enum.EasingStyle.Quad), {Size = SIZE_BASE}):Play()
+end)
+
+-- ── CLIQUE → F6 PRESS + RELEASE (CORRIGIDO) ────────
+TextButton.MouseButton1Down:Connect(function()
+	-- animação
+	TweenService:Create(Frame, TweenInfo.new(0.07), {Size = SIZE_CLICK}):Play()
+	task.delay(0.12, function()
+		TweenService:Create(Frame,
+			TweenInfo.new(0.18, Enum.EasingStyle.Back, Enum.EasingDirection.Out),
+			{Size = SIZE_BASE}
+		):Play()
+	end)
+
+	-- CORRIGIDO: envia press E release do F6
+	VIM:SendKeyEvent(true,  "F6", false, game)
+	VIM:SendKeyEvent(false, "F6", false, game)
+
+	-- atualiza visual
+	hubAberto = not hubAberto
+	setVisual(hubAberto)
+end)
